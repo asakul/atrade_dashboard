@@ -29,7 +29,7 @@ def overview(request):
 
         last_store = r.get(robot.instanceId + ":last_store")
         if last_store is not None:
-            last_store = datetime.datetime.utcfromtimestamp(float(last_store))
+            last_store = datetime.datetime.utcfromtimestamp(float(str(last_store, 'utf-8')[:-1]))
         index += 1
         robot_states.append((index, robot.instanceId, json.dumps(state, sort_keys=True, indent=2, separators=(',', ': ')), positions, last_store))
 
