@@ -1,0 +1,29 @@
+{% load bootstrap3 %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% bootstrap_css %}
+    <script src="{% bootstrap_jquery_url %}"></script>
+    {% bootstrap_javascript %}
+    <title>ATrade dashboard</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-default">
+        <div class="navbar-header">
+            <a class="navbar-brand">Dashboard</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li><a href="{% url 'overview' %}">Overview</a></li>
+        </ul>
+    </nav>
+
+    {% bootstrap_messages %}
+
+    <div id="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+

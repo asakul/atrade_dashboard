@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="panel-group">
+{% for index, instanceId, state, positions in robot_states %}
+    <div class="panel panel-default">
+        <div class="panel-heading" id="heading-{{instanceId}}">
+            <a role="button" data-toggle="collapse" href="#collapse-{{index}}">
+            {{ instanceId }}
+            </a>
+        </div>
+        <div id="collapse-{{index}}" class="panel-collapse collapse">
+            <div class="panel-body">
+            <pre>{{ state }}</pre>
+
+            {% for position in positions %}
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <p>State: {{ position.posState.tag }} </p>
+                        <p>Ticker: {{ position.posTicker }} </p>
+                        <p>Balance: {{ position.posBalance }} </p>
+                        {% if position.posEntryTime %}
+                        <p>Entry: {{ position.posEntryTime }} </p>
+                        {% endif %}
+                        {% if position.posExitTime %}
+                        <p>Exit: {{ position.posExitTime }} </p>
+                        {% endif %}
+                        {% if position.posStopPrice %}
+                        <p>Stop at: {{ position.posStopPrice }} </p>
+                        {% endif %}
+                        {% if position.posTakeProfitPrice %}
+                        <p>Take profit at: {{ position.posTakeProfitPrice }} </p>
+                        {% endif %}
+                        <p>Account: {{ position.posAccount }} </p>
+                    </div>
+                </div>
+            {% endfor %}
+
+            </div>
+            <div class="panel-footer">
+                <a class="btn btn-danger" href="{% url 'delete_instance' instanceId %}">Delete</a>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<form class="form-inline" action="{% url 'add_instance' %}" method="POST">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="instance_id">New instance ID:</label>
+        <input type="text" class="form-control" id="instance_id" name="instance_id" placeholder="instance ID" />
+    </div>
+    <button type="submit" class="btn btn-success">Add</button>
+</form>
+{% endblock %}
