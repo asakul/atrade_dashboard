@@ -8,6 +8,7 @@ from django.contrib import messages
 from .models import RobotInstance
 import redis
 import json
+import datetime
 
 def overview(request):
     r = redis.StrictRedis(unix_socket_path='/var/run/redis/redis')
@@ -20,13 +21,17 @@ def overview(request):
             state = json.loads(str(raw_state, 'utf-8'))
             try:
                 positions = state['positions']
+                del state['positions']
             except KeyError:
                 positions = dict()
-            del state['positions']
         else:
             state = dict()
+
+        last_store = r.get(robot.instanceId + ":last_store")
+        if last_store is not None:
+            last_store = datetime.datetime.utcfromtimestamp(float(last_store))
         index += 1
-        robot_states.append((index, robot.instanceId, json.dumps(state, sort_keys=True, indent=2, separators=(',', ': ')), positions))
+        robot_states.append((index, robot.instanceId, json.dumps(state, sort_keys=True, indent=2, separators=(',', ': ')), positions, last_store))
 
     template = loader.get_template('dashboard/overview.html')
     context = {

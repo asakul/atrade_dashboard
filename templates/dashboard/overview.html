@@ -2,11 +2,12 @@
 
 {% block content %}
 <div class="panel-group">
-{% for index, instanceId, state, positions in robot_states %}
+{% for index, instanceId, state, positions, last_store in robot_states %}
     <div class="panel panel-default">
         <div class="panel-heading" id="heading-{{instanceId}}">
             <a role="button" data-toggle="collapse" href="#collapse-{{index}}">
             {{ instanceId }}
+            {% if last_store %}<div class="pull-right"><span class="badge">{{ last_store }}</span></div>{% endif %}
             </a>
         </div>
         <div id="collapse-{{index}}" class="panel-collapse collapse">
