@@ -2,19 +2,23 @@
 
 {% block content %}
 <div class="panel-group">
-{% for index, instanceId, state, positions, last_store in robot_states %}
+{% for entry in robot_states %}
     <div class="panel panel-default">
-        <div class="panel-heading" id="heading-{{instanceId}}">
-            <a role="button" data-toggle="collapse" href="#collapse-{{index}}">
-            {{ instanceId }}
-            {% if last_store %}<div class="pull-right"><span class="badge">{{ last_store }}</span></div>{% endif %}
+        <div class="panel-heading" id="heading-{{entry.instance_id}}">
+            <a role="button" data-toggle="collapse" href="#collapse-{{entry.index}}">
+            {{ entry.instance_id }}
+            <div class="pull-right">
+                {% if entry.open_pos_counter > 0 %} <span class="label label-primary">{{ entry.open_pos_counter }}</span> {% endif %}
+                {% if entry.pending_pos_counter > 0 %} <span class="label label-warning">{{ entry.pending_pos_counter }}</span> {% endif %}
+                {% if entry.last_store %}<span class="badge">{{ entry.last_store }}</span>{% endif %}
+            </div>
             </a>
         </div>
-        <div id="collapse-{{index}}" class="panel-collapse collapse">
+        <div id="collapse-{{entry.index}}" class="panel-collapse collapse">
             <div class="panel-body">
-            <pre>{{ state }}</pre>
+            <pre>{{ entry.state }}</pre>
 
-            {% for position in positions %}
+            {% for position in entry.positions %}
                 <div class="panel panel-default">
                     <div class="panel-body">
                         <p>State: {{ position.posState.tag }} </p>
@@ -39,7 +43,7 @@
 
             </div>
             <div class="panel-footer">
-                <a class="btn btn-danger" href="{% url 'delete_instance' instanceId %}">Delete</a>
+                <a class="btn btn-danger" href="{% url 'delete_instance' entry.instance_id %}">Delete</a>
             </div>
         </div>
     </div>

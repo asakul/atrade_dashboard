@@ -16,22 +16,38 @@ def overview(request):
     robot_states = []
     index = 0
     for robot in robot_instances:
+        entry = {}
         raw_state = r.get(robot.instanceId)
         if raw_state is not None:
             state = json.loads(str(raw_state, 'utf-8'))
             try:
-                positions = state['positions']
+                entry['positions'] = state['positions']
                 del state['positions']
             except KeyError:
-                positions = dict()
+                entry['positions'] = dict()
         else:
             state = dict()
 
+        open_pos_counter = 0
+        pending_pos_counter = 0
+        for pos in entry['positions']:
+            if pos['posState']['tag'] == 'PositionOpen':
+                open_pos_counter += 1
+            elif pos['posState']['tag'] == 'PositionWaitingOpen':
+                pending_pos_counter += 1
+
+        entry['open_pos_counter'] = open_pos_counter
+        entry['pending_pos_counter'] = pending_pos_counter
+        entry['state'] = json.dumps(state, sort_keys=True, indent=2, separators=(',', ': '))
+
         last_store = r.get(robot.instanceId + ":last_store")
         if last_store is not None:
-            last_store = datetime.datetime.utcfromtimestamp(float(str(last_store, 'utf-8')[:-1]))
+            entry['last_store'] = datetime.datetime.utcfromtimestamp(float(str(last_store, 'utf-8')[:-1]))
         index += 1
-        robot_states.append((index, robot.instanceId, json.dumps(state, sort_keys=True, indent=2, separators=(',', ': ')), positions, last_store))
+        entry['index'] = index
+        entry['instance_id'] = robot.instanceId
+
+        robot_states.append(entry)
 
     template = loader.get_template('dashboard/overview.html')
     context = {
