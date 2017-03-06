@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 
-from .models import RobotInstance
+from .models import RobotInstance, Trade
 import redis
 import json
 import datetime
@@ -70,3 +70,10 @@ def delete_instance(request, instance_id):
     instance.delete()
     return HttpResponseRedirect(reverse('overview'))
 
+def trades_index(request):
+    trades = Trade.objects.all()
+    template = loader.get_template('dashboard/trades.html')
+    context = {
+            'trades' : trades
+            }
+    return HttpResponse(template.render(context, request))
