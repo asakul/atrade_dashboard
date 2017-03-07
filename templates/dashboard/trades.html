@@ -1,7 +1,16 @@
 {% extends "dashboard/base.html" %}
+{% load bootstrap3 %}
 {% load mathfilters %}
 
 {% block content %}
+<div class="panel panel-default panel-collapse collapse" id="new_trade_form">
+    <div class="panel-body">
+        <form action="#" method="POST">
+        {% bootstrap_form new_trade_form %}
+        {% bootstrap_button button_type='submit' content='Submit' %}
+        </form>
+    </div>
+</div>
 <table class="table table-condensed">
     <tr>
         <td>Time</td>
@@ -13,7 +22,7 @@
         <td>Volume</td>
         <td>Strategy ID</td>
         <td>Signal ID</td>
-        <td></td>
+        <td> <a href="#new_trade_form" role="button" data-toggle="collapse">New trade...</a> </td>
     </tr>
 {% for trade in trades %}
     <tr>
@@ -26,7 +35,7 @@
         <td>{{ trade.volume|stringformat:".3f"}} {{ trade.volumeCurrency }}</td>
         <td>{{ trade.strategyId }}</td>
         <td>{{ trade.signalId }}</td>
-        <td><button type="button" class="btn btn-danger" onclick="if(window.confirm('Confirm deletion')) { document.location.href = '/delete_trade?id={{ trade.pk }}'}; return false;">Delete</button></td>
+        <td><button type="button" class="btn btn-danger" onclick="if(window.confirm('Confirm deletion')) { document.location.href = '{% url 'delete_trade' trade_id=trade.pk %}'}; return false;">Delete</button></td>
     </tr>
 {% endfor %}
 </table>

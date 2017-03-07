@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib import messages
 
 from .models import RobotInstance, Trade
+from .forms import NewTradeForm
 import redis
 import json
 import datetime
@@ -71,9 +72,18 @@ def delete_instance(request, instance_id):
     return HttpResponseRedirect(reverse('overview'))
 
 def trades_index(request):
+    now = datetime.datetime.utcnow()
+    new_trade_form = NewTradeForm(initial={'timestamp' : now})
     trades = Trade.objects.all()
     template = loader.get_template('dashboard/trades.html')
     context = {
-            'trades' : trades
+            'trades' : trades,
+            'new_trade_form' : new_trade_form
             }
     return HttpResponse(template.render(context, request))
+
+def delete_trade(request, trade_id):
+    trade = get_object_or_404(Trade, pk=trade_id)
+    trade.delete()
+    return HttpResponseRedirect(reverse('trades_index'))
+
