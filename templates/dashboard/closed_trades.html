@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load static %}
 {% load bootstrap3 %}
 {% load mathfilters %}
 
@@ -14,6 +15,15 @@
         <td>Strategy ID</td>
     </tr>
 {% for closed_trade in closed_trades %}
+    <tr class="{% if closed_trade.profit > 0 %}success{% else %}danger{% endif %}">
+        <td style="width: 32px;">{% if closed_trade.direction == "long" %}<img src="{% static "images/up-arrow-7.png" %}" class="img-responsive"/> {% else %}<img src="{% static "images/down-arrow-2.png" %}" class="img-responsive"/> {% endif %}</td>
+        <td>{{ closed_trade.account }}</td>
+        <td>{{ closed_trade.security }}</td>
+        <td>{{ closed_trade.entryTime }}</td>
+        <td>{{ closed_trade.exitTime }}</td>
+        <td>{{ closed_trade.profit }} {{ closed_trade.profitCurrency}}</td>
+        <td>{{ closed_trade.strategyId }}</td>
+    </tr>
 {% endfor %}
 </table>
 {% endblock %}

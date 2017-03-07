@@ -4,8 +4,9 @@ from django.template import loader
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
+from django.db import transaction
 
-from .models import RobotInstance, Trade
+from .models import RobotInstance, Trade, ClosedTrade
 from .forms import NewTradeForm
 import redis
 import json
@@ -109,3 +110,59 @@ def add_trade(request):
             return HttpResponse(template.render(context, request))
     raise Http404("Invalid method")
 
+@transaction.atomic
+def aggregate_unbalanced_trades():
+    unbalanced_trades = Trade.objects.filter(balanced=False).order_by('timestamp')
+    balanced_trades = []
+    balances = {}
+    for trade in unbalanced_trades:
+        balance_key = '/'.join([trade.account, trade.security, trade.strategyId])
+        try:
+            balance_entry = balances[balance_key]
+        except KeyError:
+            balance_entry = { 'balance' : 0}
+
+        print('ts:', trade.timestamp)
+        if balance_entry['balance'] == 0:
+            print('new entry: ', balance_key)
+            balance_entry['balance'] = trade.quantity
+            direction = ''
+            if trade.quantity > 0:
+                direction='long'
+            else:
+                direction='short'
+            balance_entry['trade'] = ClosedTrade(account=trade.account, security=trade.security, entryTime=trade.timestamp, profitCurrency=trade.volumeCurrency,
+                    profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
+            balance_entry['ks'] = trade.volume / (trade.price * abs(trade.quantity))
+            balance_entry['trade_ids'] = [trade.pk]
+        else:
+            print('update entry: ', balance_key)
+            balance_entry['balance'] += trade.quantity
+            balance_entry['trade'].profit += -trade.price * trade.quantity
+            balance_entry['ks'] += trade.volume / (trade.price * abs(trade.quantity))
+            balance_entry['ks'] /= 2
+            balance_entry['trade_ids'].append(trade.pk)
+            
+            print('updated: ', balance_entry['balance'])
+            if balance_entry['balance'] == 0:
+                balance_entry['trade'].profit *= balance_entry['ks']
+                balance_entry['trade'].exitTime = trade.timestamp
+                balanced_trades.append((balance_entry['trade'], balance_entry['trade_ids']))
+        balances[balance_key] = balance_entry
+
+    for trade, trade_ids in balanced_trades:
+        trade.save()
+        for trade_id in trade_ids:
+            tr = Trade.objects.get(pk=trade_id)
+            tr.balanced = True
+            tr.save()
+
+
+def closed_trades_index(request):
+    aggregate_unbalanced_trades()
+    closed_trades = ClosedTrade.objects.all()
+    template = loader.get_template('dashboard/closed_trades.html')
+    context = {
+            'closed_trades' : closed_trades
+            }
+    return HttpResponse(template.render(context, request))
