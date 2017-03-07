@@ -7,7 +7,7 @@ class NewTradeForm(forms.Form):
     operation = forms.ChoiceField(choices=[('buy', 'Buy'), ('sell', 'Sell')])
     price = forms.DecimalField()
     quantity = forms.IntegerField()
-    volume = forms.DateField()
+    volume = forms.DecimalField()
     volumeCurrency = forms.CharField(max_length=10)
     strategyId = forms.CharField(max_length=64)
     signalId = forms.CharField(max_length=64)

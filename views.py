@@ -1,5 +1,5 @@
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import loader
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
@@ -86,4 +86,26 @@ def delete_trade(request, trade_id):
     trade = get_object_or_404(Trade, pk=trade_id)
     trade.delete()
     return HttpResponseRedirect(reverse('trades_index'))
+
+def add_trade(request):
+    if request.method == 'POST':
+        form = NewTradeForm(request.POST)
+        if form.is_valid():
+            d = form.cleaned_data
+            quantity_multiplier = 1
+            if d['operation'] == 'sell':
+                quantity_multiplier = -1
+            trade = Trade(account=d['account'], security=d['security'], price=d['price'], quantity=quantity_multiplier * d['quantity'],
+                    volume=d['volume'], volumeCurrency=d['volumeCurrency'], strategyId=d['strategyId'], signalId=d['signalId'], timestamp=d['timestamp'], balanced=False)
+            trade.save()
+            return HttpResponseRedirect(reverse('trades_index'))
+        else:
+            trades = Trade.objects.all()
+            template = loader.get_template('dashboard/trades.html')
+            context = {
+                    'trades' : trades,
+                    'new_trade_form' : form
+                    }
+            return HttpResponse(template.render(context, request))
+    raise Http404("Invalid method")
 

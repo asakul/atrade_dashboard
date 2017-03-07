@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% load bootstrap3 %}
+{% load mathfilters %}
+
+{% block content %}
+<table class="table table-condensed">
+    <tr>
+        <td></td>
+        <td>Account</td>
+        <td>Security</td>
+        <td>EntryTime</td>
+        <td>ExitTime</td>
+        <td>Profit</td>
+        <td>Strategy ID</td>
+    </tr>
+{% for closed_trade in closed_trades %}
+{% endfor %}
+</table>
+{% endblock %}
+
