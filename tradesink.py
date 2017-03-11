@@ -17,9 +17,14 @@ def store_trade(j):
         quantity = -quantity
     elif j['operation'] != 'buy':
         raise Exception('Invalid operation: ' + j['operation'])
+
+    try:
+        comment = j['order-comment']
+    except KeyError:
+        comment = ""
     ts = parse_timestamp(j['execution-time'])
     trade = Trade(account=j['account'], security=j['security'], price=float(j['price']), quantity=quantity, volume=float(j['volume']), volumeCurrency=j['volume-currency'], strategyId=j['strategy'],
-                signalId=j['signal-id'], comment=j['order-comment'], timestamp=ts)
+                signalId=j['signal-id'], comment=comment, timestamp=ts)
     trade.save()
 
 
