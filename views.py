@@ -19,6 +19,7 @@ def overview(request):
     index = 0
     for robot in robot_instances:
         entry = {}
+        entry['positions'] = dict()
         raw_state = r.get(robot.instanceId)
         if raw_state is not None:
             state = json.loads(str(raw_state, 'utf-8'))
@@ -75,7 +76,7 @@ def delete_instance(request, instance_id):
 def trades_index(request):
     now = datetime.datetime.utcnow()
     new_trade_form = NewTradeForm(initial={'timestamp' : now})
-    trades = Trade.objects.all()
+    trades = Trade.objects.all().order_by('-timestamp')
     template = loader.get_template('dashboard/trades.html')
     context = {
             'trades' : trades,
