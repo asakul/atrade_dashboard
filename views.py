@@ -160,6 +160,7 @@ def aggregate_unbalanced_trades():
 
 
 def closed_trades_index(request):
+    aggregate_unbalanced_trades()
     form = ClosedTradeFilterForm(request.GET)
     if form.is_valid():
         d = form.cleaned_data
@@ -177,10 +178,21 @@ def closed_trades_index(request):
         closed_trades = ClosedTrade.objects.all()
         form = ClosedTradeFilterForm()
 
-    aggregate_unbalanced_trades()
+    closed_trades = closed_trades.order_by('-entryTime')
+
     template = loader.get_template('dashboard/closed_trades.html')
     context = {
             'closed_trades' : closed_trades,
             'closed_trades_filter_form' : form
             }
     return HttpResponse(template.render(context, request))
+
+@transaction.atomic
+def do_rebalance():
+    ClosedTrade.objects.all().delete()
+    Trade.objects.all().update(balanced=False)
+    
+
+def rebalance_closed_trades(request):
+    do_rebalance()
+    return HttpResponseRedirect(reverse('closed_trades_index'))

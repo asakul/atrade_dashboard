@@ -26,6 +26,6 @@ class ClosedTradeFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         all_accounts, all_strategies = get_all_accounts_and_strategies()
-        self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(list(all_accounts), list(all_accounts)))
-        self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(list(all_strategies), list(all_strategies)))
+        self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(list(all_accounts), list(all_accounts)), required=False)
+        self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(list(all_strategies), list(all_strategies)), required=False)
 

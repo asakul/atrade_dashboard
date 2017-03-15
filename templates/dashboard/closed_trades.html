@@ -7,6 +7,7 @@
 <div class="panel panel-default">
 	<div class="panel-header">
 		<a href="#closed_trades_filter_form" role="button" data-toggle="collapse">Apply filter...</a>
+		<a href="{% url 'rebalance_closed_trades' %}" class="pull-right">Rebalance...</a>
 	</div>
     <div class="panel-body panel-collapse collapse" id="closed_trades_filter_form">
 		<form action="{% url 'closed_trades_index' %}" method="GET">
