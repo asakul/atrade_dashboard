@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db import transaction
 
 from .models import RobotInstance, Trade, ClosedTrade
-from .forms import NewTradeForm
+from .forms import NewTradeForm, ClosedTradeFilterForm
 import redis
 import json
 import datetime
@@ -160,10 +160,27 @@ def aggregate_unbalanced_trades():
 
 
 def closed_trades_index(request):
+    form = ClosedTradeFilterForm(request.GET)
+    if form.is_valid():
+        d = form.cleaned_data
+        if len(d['accounts']) == 0:
+            if len(d['strategies']) == 0:
+                closed_trades = ClosedTrade.objects.all()
+            else:
+                closed_trades = ClosedTrade.objects.filter(strategyId__in=list(d['strategies']))
+        else:
+            if len(d['strategies']) == 0:
+                closed_trades = ClosedTrade.objects.filter(account__in=list(d['accounts']))
+            else:
+                closed_trades = ClosedTrade.objects.filter(account__in=list(d['accounts']), strategyId__in=list(d['strategies']))
+    else:
+        closed_trades = ClosedTrade.objects.all()
+        form = ClosedTradeFilterForm()
+
     aggregate_unbalanced_trades()
-    closed_trades = ClosedTrade.objects.all()
     template = loader.get_template('dashboard/closed_trades.html')
     context = {
-            'closed_trades' : closed_trades
+            'closed_trades' : closed_trades,
+            'closed_trades_filter_form' : form
             }
     return HttpResponse(template.render(context, request))
