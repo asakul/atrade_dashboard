@@ -169,7 +169,7 @@ def make_cumulative_profits(closed_trades):
                     'elements' : [] }
 
         element = {'year' : trade.exitTime.year,
-                   'month' : trade.exitTime.month,
+                   'month' : trade.exitTime.month - 1,
                    'day' : trade.exitTime.day,
                    'hour' : trade.exitTime.hour,
                    'minute' : trade.exitTime.minute,
