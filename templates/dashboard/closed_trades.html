@@ -4,6 +4,7 @@
 {% load mathfilters %}
 
 {% block content %}
+<script src="http://code.highcharts.com/highcharts.js"></script>
 <div class="panel panel-default">
 	<div class="panel-header">
 		<a href="#closed_trades_filter_form" role="button" data-toggle="collapse">Apply filter...</a>
@@ -16,6 +17,8 @@
 		{% bootstrap_button button_type='submit' content='Submit' %}
 		</form>
 	</div>
+</div>
+<div id="equity-container" style="width:100%; height:400px;">
 </div>
 <table class="table table-condensed">
     <tr>
@@ -39,5 +42,42 @@
     </tr>
 {% endfor %}
 </table>
+<script>
+$(function () { 
+	$('#equity-container').highcharts({
+		chart : {
+			type: 'spline'
+		},
+		title: {
+			text: 'PnL'
+		},
+		xAxis: {
+			type: 'datetime',
+			dateTimeLabelFormats : {
+				month: '%e. %b',
+				year: '%b'
+			}
+		},
+		yAxis: {
+			title: {
+				text: 'PnL'
+			}
+		},
+		series: [
+			{% for series_name, series in cumulative_profits.items %}
+				{
+				name: '{{ series_name }}',
+				data: [
+				{% for element in series.elements %}
+					[Date.UTC({{ element.year }}, {{ element.month }}, {{ element.day }}, {{ element.hour }}, {{ element.minute}}, {{ element.second }}), {{ element.value }}]
+					,
+				{% endfor %}
+				 ]
+				},
+			 {% endfor %}
+		]
+	});
+});
+</script>
 {% endblock %}
 

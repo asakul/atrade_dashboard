@@ -158,6 +158,25 @@ def aggregate_unbalanced_trades():
             tr.balanced = True
             tr.save()
 
+def make_cumulative_profits(closed_trades):
+    result = {}
+    for trade in closed_trades:
+        try:
+            result[trade.account]['value'] += trade.profit
+        except KeyError:
+            result[trade.account] = { 'name' : trade.account,
+                    'value' : trade.profit,
+                    'elements' : [] }
+
+        element = {'year' : trade.exitTime.year,
+                   'month' : trade.exitTime.month,
+                   'day' : trade.exitTime.day,
+                   'hour' : trade.exitTime.hour,
+                   'minute' : trade.exitTime.minute,
+                   'second' : trade.exitTime.second,
+                   'value' : result[trade.account]['value']}
+        result[trade.account]['elements'].append(element)
+    return result
 
 def closed_trades_index(request):
     aggregate_unbalanced_trades()
@@ -178,12 +197,15 @@ def closed_trades_index(request):
         closed_trades = ClosedTrade.objects.all()
         form = ClosedTradeFilterForm()
 
-    closed_trades = closed_trades.order_by('-entryTime')
+    closed_trades = closed_trades.order_by('-exitTime')
+
+    cum_profits = make_cumulative_profits(closed_trades)
 
     template = loader.get_template('dashboard/closed_trades.html')
     context = {
             'closed_trades' : closed_trades,
-            'closed_trades_filter_form' : form
+            'closed_trades_filter_form' : form,
+            'cumulative_profits' : cum_profits
             }
     return HttpResponse(template.render(context, request))
 
