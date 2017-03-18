@@ -197,9 +197,11 @@ def closed_trades_index(request):
         closed_trades = ClosedTrade.objects.all()
         form = ClosedTradeFilterForm()
 
-    closed_trades = closed_trades.order_by('-exitTime')
+    closed_trades = closed_trades.order_by('-entryTime')
 
-    cum_profits = make_cumulative_profits(closed_trades)
+    closed_trades_prime = closed_trades.order_by('exitTime')
+
+    cum_profits = make_cumulative_profits(closed_trades_prime)
 
     template = loader.get_template('dashboard/closed_trades.html')
     context = {
