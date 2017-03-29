@@ -4,14 +4,56 @@ from django.template import loader
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.contrib.auth import authenticate, login, logout
 
 from .models import RobotInstance, Trade, ClosedTrade
-from .forms import NewTradeForm, ClosedTradeFilterForm
+from .forms import NewTradeForm, ClosedTradeFilterForm, LoginForm
 import redis
 import json
 import datetime
 
+def login_view(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        nextlink = request.POST.get('next', '')
+        if form.is_valid():
+            username = request.POST['username']
+            password = request.POST['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                if nextlink == "":
+                    return HttpResponseRedirect(reverse('overview'))
+                else:
+                    return HttpResponseRedirect(nextlink)
+            else:
+                return HttpResponseRedirect(reverse('login'))
+        else:
+            template = loader.get_template('dashboard/login.html')
+
+            context = {
+                    'login_form' : form,
+                    'next' : nextlink
+                    }
+            return HttpResponse(template.render(context, request))
+    else:
+        form = LoginForm()
+        template = loader.get_template('dashboard/login.html')
+        nextlink = request.GET.get('next', '')
+        context = {
+                'login_form' : form,
+                'next' : nextlink
+                }
+        return HttpResponse(template.render(context, request))
+    raise Http404("Invalid method")
+
+def logout_view(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('login'))
+
+@login_required
 def overview(request):
     r = redis.StrictRedis(unix_socket_path='/var/run/redis/redis')
     robot_instances = RobotInstance.objects.order_by('instanceId')
@@ -55,10 +97,12 @@ def overview(request):
     template = loader.get_template('dashboard/overview.html')
     context = {
             'robot_instances' : robot_instances,
-            'robot_states' : robot_states
+            'robot_states' : robot_states,
+            'user' : request.user
             }
     return HttpResponse(template.render(context, request))
 
+@login_required
 def add_instance(request):
     instance_id = request.POST['instance_id']
     if instance_id == "" or RobotInstance.objects.filter(instanceId=instance_id).count() > 0:
@@ -68,11 +112,13 @@ def add_instance(request):
         new_instance.save()
     return HttpResponseRedirect(reverse('overview'))
 
+@login_required
 def delete_instance(request, instance_id):
     instance = get_object_or_404(RobotInstance, instanceId=instance_id)
     instance.delete()
     return HttpResponseRedirect(reverse('overview'))
 
+@login_required
 def trades_index(request):
     now = datetime.datetime.utcnow()
     new_trade_form = NewTradeForm(initial={'timestamp' : now})
@@ -80,15 +126,18 @@ def trades_index(request):
     template = loader.get_template('dashboard/trades.html')
     context = {
             'trades' : trades,
-            'new_trade_form' : new_trade_form
+            'new_trade_form' : new_trade_form,
+            'user' : request.user
             }
     return HttpResponse(template.render(context, request))
 
+@login_required
 def delete_trade(request, trade_id):
     trade = get_object_or_404(Trade, pk=trade_id)
     trade.delete()
     return HttpResponseRedirect(reverse('trades_index'))
 
+@login_required
 def add_trade(request):
     if request.method == 'POST':
         form = NewTradeForm(request.POST)
@@ -106,7 +155,8 @@ def add_trade(request):
             template = loader.get_template('dashboard/trades.html')
             context = {
                     'trades' : trades,
-                    'new_trade_form' : form
+                    'new_trade_form' : form,
+                    'user' : request.user
                     }
             return HttpResponse(template.render(context, request))
     raise Http404("Invalid method")
@@ -143,7 +193,7 @@ def aggregate_unbalanced_trades():
             balance_entry['ks'] += trade.volume / (trade.price * abs(trade.quantity))
             balance_entry['ks'] /= 2
             balance_entry['trade_ids'].append(trade.pk)
-            
+
             print('updated: ', balance_entry['balance'])
             if balance_entry['balance'] == 0:
                 balance_entry['trade'].profit *= balance_entry['ks']
@@ -178,6 +228,7 @@ def make_cumulative_profits(closed_trades):
         result[trade.account]['elements'].append(element)
     return result
 
+@login_required
 def closed_trades_index(request):
     aggregate_unbalanced_trades()
     form = ClosedTradeFilterForm(request.GET)
@@ -207,7 +258,8 @@ def closed_trades_index(request):
     context = {
             'closed_trades' : closed_trades,
             'closed_trades_filter_form' : form,
-            'cumulative_profits' : cum_profits
+            'cumulative_profits' : cum_profits,
+            'user' : request.user
             }
     return HttpResponse(template.render(context, request))
 
@@ -215,8 +267,8 @@ def closed_trades_index(request):
 def do_rebalance():
     ClosedTrade.objects.all().delete()
     Trade.objects.all().update(balanced=False)
-    
 
+@login_required
 def rebalance_closed_trades(request):
     do_rebalance()
     return HttpResponseRedirect(reverse('closed_trades_index'))

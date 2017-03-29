@@ -19,6 +19,12 @@
             <li><a href="{% url 'trades_index' %}">Trades</a></li>
             <li><a href="{% url 'closed_trades_index' %}">Closed</a></li>
         </ul>
+        <ul class="nav navbar-nav navbar-right">
+          {% if user.username %}
+          <li><a href="#">Logged in as: {{ user.username }}</a></li>
+          <li><a href="{% url 'logout' %}">Logout</a></li>
+          {% endif %}
+        </ul>
     </nav>
 
     {% bootstrap_messages %}
@@ -28,4 +34,3 @@
     </div>
 </body>
 </html>
-
