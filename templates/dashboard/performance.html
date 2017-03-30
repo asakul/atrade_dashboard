@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load bootstrap3 %}
+{% load mathfilters %}
+{% load humanize %}
+
+{% block content %}
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<div id="profits-container" style="width:100%; height:400px;">
+</div>
+
+<table class="table">
+  <tr>
+    <td>PnL</td>
+    <td> {{ results.total.pnl|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td>Profit</td>
+    <td> {{ results.total.profit|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td>Loss</td>
+    <td> {{ results.total.loss|floatformat:2 }}</td>
+  </tr>
+  <tr>
+    <td>PF</td>
+    <td> {{ results.total.pf|floatformat:2 }}</td>
+  </tr>
+</table>
+
+<script>
+$(function () {
+	$('#profits-container').highcharts({
+		chart : {
+			type: 'column'
+		},
+		title: {
+			text: 'PnL'
+		},
+		xAxis: {
+			categories : [
+        {% for date in dates %}
+          '{{date}}',
+        {% endfor %}
+      ]
+		},
+		series: [
+			{% for series_name, series in columns.items %}
+				{
+				name: '{{ series_name }}',
+				data: [
+          {% for value in series %}
+				      {{value}},
+          {% endfor %}
+				 ]
+				},
+			 {% endfor %}
+		]
+	});
+});
+</script>
+{% endblock %}

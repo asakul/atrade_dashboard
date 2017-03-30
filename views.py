@@ -259,8 +259,7 @@ def closed_trades_index(request):
             'closed_trades' : closed_trades,
             'closed_trades_filter_form' : form,
             'cumulative_profits' : cum_profits,
-            'user' : request.user
-            }
+            'user' : request.user }
     return HttpResponse(template.render(context, request))
 
 @transaction.atomic
@@ -272,3 +271,53 @@ def do_rebalance():
 def rebalance_closed_trades(request):
     do_rebalance()
     return HttpResponseRedirect(reverse('closed_trades_index'))
+
+@login_required
+def performance(request):
+    aggregate_unbalanced_trades()
+    all_accounts = set()
+    for trade in ClosedTrade.objects.all():
+        if trade.account != 'demo':
+            all_accounts.add(trade.account)
+
+    closed_trades = ClosedTrade.objects.exclude(account='demo').order_by('exitTime')
+    dates = []
+    columns = {}
+    for account in all_accounts:
+        columns[account] = []
+    prev_day = None
+    for trade in closed_trades:
+        if prev_day != trade.exitTime.date():
+            prev_day = trade.exitTime.date()
+            dates.append(prev_day)
+            for account in all_accounts:
+                columns[account].append(0)
+        columns[trade.account][-1] += trade.profit
+
+    results = { 'total' : { 'pnl' : 0, 'profit' : 0, 'loss' : 0 } }
+
+    for account in all_accounts:
+        results[account] = { 'pnl' : 0, 'profit' : 0, 'loss' : 0 }
+
+    for trade in closed_trades:
+        if trade.account != 'demo':
+            results['total']['pnl'] += trade.profit
+            results[trade.account]['pnl'] += trade.profit
+
+            if trade.profit > 0:
+                results['total']['profit'] += trade.profit
+                results[trade.account]['profit'] += trade.profit
+            else:
+                results['total']['loss'] -= trade.profit
+                results[trade.account]['loss'] -= trade.profit
+
+    results['total']['pf'] = results['total']['profit'] / results['total']['loss']
+
+    template = loader.get_template('dashboard/performance.html')
+    context = {
+        'user' : request.user,
+        'dates' : dates,
+        'columns' : columns,
+        'results' : results
+    }
+    return HttpResponse(template.render(context, request))

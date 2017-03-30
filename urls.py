@@ -14,4 +14,5 @@ urlpatterns = [
         url(r'^delete_trade/(?P<trade_id>[^/]+)$', views.delete_trade, name='delete_trade'),
         url(r'^closed_trades/$', views.closed_trades_index, name='closed_trades_index'),
         url(r'^rebalance_closed_trades/$', views.rebalance_closed_trades, name='rebalance_closed_trades'),
+        url(r'^performance/$', views.performance, name='performance')
 ]
