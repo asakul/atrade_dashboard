@@ -302,6 +302,8 @@ def performance(request):
     for account in all_accounts:
         columns[account] = []
     timeframe = request.GET.get('timeframe')
+    if timeframe is None:
+        timeframe = 'daily'
     if timeframe == 'daily':
         prev_day = None
         for trade in closed_trades:
