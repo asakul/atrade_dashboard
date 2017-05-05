@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib.auth import authenticate, login, logout
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .models import RobotInstance, Trade, ClosedTrade
 from .forms import NewTradeForm, ClosedTradeFilterForm, LoginForm
@@ -123,11 +124,25 @@ def trades_index(request):
     now = datetime.datetime.utcnow()
     new_trade_form = NewTradeForm(initial={'timestamp' : now})
     trades = Trade.objects.all().order_by('-timestamp')
+    paginator = Paginator(trades, 25)
+    try:
+        page_num = int(request.GET.get('page'))
+    except:
+        page_num = 1
+    try:
+        trades = paginator.page(page_num)
+    except PageNotAnInteger:
+        trades = paginator.page(1)
+    except EmptyPage:
+        trades = paginator.page(1)
+
     template = loader.get_template('dashboard/trades.html')
     context = {
             'trades' : trades,
             'new_trade_form' : new_trade_form,
-            'user' : request.user
+            'user' : request.user,
+            'page_num' : page_num,
+            'page_range' : paginator.page_range
             }
     return HttpResponse(template.render(context, request))
 
