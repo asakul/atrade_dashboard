@@ -5,6 +5,11 @@
 {% load humanize %}
 
 {% block content %}
+<ul class="nav nav-pills">
+    <li role="presentation"{% if timeframe|length == 0 or timeframe == 'daily' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=daily">Daily</a></li>
+    <li role="presentation"{% if timeframe == 'weekly' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=weekly">Weekly</a></li>
+    <li role="presentation"{% if timeframe == 'monthly' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=monthly">Monthly</a></li>
+</ul>
 <script src="http://code.highcharts.com/highcharts.js"></script>
 <div id="profits-container" style="width:100%; height:400px;">
 </div>

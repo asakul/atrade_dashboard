@@ -14,6 +14,7 @@ from .forms import NewTradeForm, ClosedTradeFilterForm, LoginForm
 import redis
 import json
 import datetime
+import calendar
 
 def login_view(request):
     if request.method == 'POST':
@@ -300,14 +301,41 @@ def performance(request):
     columns = {}
     for account in all_accounts:
         columns[account] = []
-    prev_day = None
-    for trade in closed_trades:
-        if prev_day != trade.exitTime.date():
-            prev_day = trade.exitTime.date()
-            dates.append(prev_day)
-            for account in all_accounts:
-                columns[account].append(0)
-        columns[trade.account][-1] += trade.profit
+    timeframe = request.GET.get('timeframe')
+    if timeframe == 'daily':
+        prev_day = None
+        for trade in closed_trades:
+            if prev_day != trade.exitTime.date():
+                prev_day = trade.exitTime.date()
+                dates.append(prev_day)
+                for account in all_accounts:
+                    columns[account].append(0)
+            columns[trade.account][-1] += trade.profit
+    elif timeframe == 'weekly':
+        epoch = datetime.date(1970, 1, 1)
+        prev_week = None
+        for trade in closed_trades:
+            this_week = (trade.exitTime.date() - epoch).days // 7
+            if prev_week != this_week:
+                prev_week = this_week
+                week_end = epoch + datetime.timedelta(weeks=prev_week + 1)
+                dates.append(week_end)
+                for account in all_accounts:
+                    columns[account].append(0)
+            columns[trade.account][-1] += trade.profit
+    elif timeframe == 'monthly':
+        epoch = datetime.date(1970, 1, 1)
+        prev_month = None
+        for trade in closed_trades:
+            this_month = trade.exitTime.date().month
+            if prev_month != this_month:
+                prev_month = this_month
+                this_date = trade.exitTime.date()
+                month_end = datetime.date(this_date.year, this_date.month, calendar.monthrange(this_date.year, this_date.month)[1])
+                dates.append(month_end)
+                for account in all_accounts:
+                    columns[account].append(0)
+            columns[trade.account][-1] += trade.profit
 
     results = { 'total' : { 'pnl' : 0, 'profit' : 0, 'loss' : 0 } }
 
@@ -333,6 +361,7 @@ def performance(request):
         'user' : request.user,
         'dates' : dates,
         'columns' : columns,
-        'results' : results
+        'results' : results,
+        'timeframe' : timeframe
     }
     return HttpResponse(template.render(context, request))
