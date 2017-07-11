@@ -1,5 +1,6 @@
 from django import forms
 from .models import ClosedTrade
+import datetime
 
 def get_all_accounts_and_strategies():
     all_accounts = set()
@@ -29,6 +30,10 @@ class ClosedTradeFilterForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        now = datetime.date.today()
+        
         all_accounts, all_strategies = get_all_accounts_and_strategies()
         self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(list(all_accounts), list(all_accounts)), required=False)
         self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(list(all_strategies), list(all_strategies)), required=False)
+        self.fields['startdate'] = forms.DateField(initial=(now - datetime.timedelta(weeks=4)))
+        self.fields['enddate'] = forms.DateField(initial=now)

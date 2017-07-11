@@ -62,9 +62,15 @@ def overview(request):
     robot_states = []
     index = 0
     for robot in robot_instances:
+        try:
+            raw_state = r.get(robot.instanceId)
+            last_store = r.get(robot.instanceId + ":last_store")
+        except:
+            raw_state = b"{}"
+            last_store = None
+
         entry = {}
         entry['positions'] = dict()
-        raw_state = r.get(robot.instanceId)
         if raw_state is not None:
             state = json.loads(str(raw_state, 'utf-8'))
             try:
@@ -87,7 +93,6 @@ def overview(request):
         entry['pending_pos_counter'] = pending_pos_counter
         entry['state'] = json.dumps(state, sort_keys=True, indent=2, separators=(',', ': '))
 
-        last_store = r.get(robot.instanceId + ":last_store")
         if last_store is not None:
             entry['last_store'] = datetime.datetime.utcfromtimestamp(float(str(last_store, 'utf-8')[:-1]))
         index += 1
@@ -250,18 +255,20 @@ def closed_trades_index(request):
     form = ClosedTradeFilterForm(request.GET)
     if form.is_valid():
         d = form.cleaned_data
-        if len(d['accounts']) == 0:
-            if len(d['strategies']) == 0:
-                closed_trades = ClosedTrade.objects.all()
-            else:
-                closed_trades = ClosedTrade.objects.filter(strategyId__in=list(d['strategies']))
-        else:
-            if len(d['strategies']) == 0:
-                closed_trades = ClosedTrade.objects.filter(account__in=list(d['accounts']))
-            else:
-                closed_trades = ClosedTrade.objects.filter(account__in=list(d['accounts']), strategyId__in=list(d['strategies']))
-    else:
         closed_trades = ClosedTrade.objects.all()
+        if len(d['strategies']) > 0:
+            closed_trades = closed_trades.filter(strategyId__in=list(d['strategies']))
+        if len(d['accounts']) > 0:
+            closed_trades = closed_trades.filter(account__in=list(d['accounts']))
+
+        if d['startdate'] is not None:
+            closed_trades = closed_trades.filter(exitTime__gte=d['startdate'])
+        if d['enddate'] is not None:
+            closed_trades = closed_trades.filter(exitTime__lte=d['enddate'])
+
+    else:
+        now = datetime.date.today()
+        closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4)))
         form = ClosedTradeFilterForm()
 
     closed_trades = closed_trades.order_by('-entryTime')
