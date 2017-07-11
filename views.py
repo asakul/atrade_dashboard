@@ -271,7 +271,7 @@ def closed_trades_index(request):
         closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4)))
         form = ClosedTradeFilterForm()
 
-    closed_trades = closed_trades.order_by('-entryTime')
+    closed_trades = closed_trades.order_by('-exitTime')
 
     closed_trades_prime = closed_trades.order_by('exitTime')
 
@@ -321,13 +321,13 @@ def performance(request):
                     columns[account].append(0)
             columns[trade.account][-1] += trade.profit
     elif timeframe == 'weekly':
-        epoch = datetime.date(1970, 1, 1)
+        epoch = datetime.date(1970, 1, 5)
         prev_week = None
         for trade in closed_trades:
             this_week = (trade.exitTime.date() - epoch).days // 7
             if prev_week != this_week:
                 prev_week = this_week
-                week_end = epoch + datetime.timedelta(weeks=prev_week + 1)
+                week_end = epoch + datetime.timedelta(weeks=prev_week, days=6)
                 dates.append(week_end)
                 for account in all_accounts:
                     columns[account].append(0)
