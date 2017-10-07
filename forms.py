@@ -33,7 +33,7 @@ class ClosedTradeFilterForm(forms.Form):
         now = datetime.date.today()
         
         all_accounts, all_strategies = get_all_accounts_and_strategies()
-        self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(list(all_accounts), list(all_accounts)), required=False)
-        self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(list(all_strategies), list(all_strategies)), required=False)
+        self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_accounts)), sorted(list(all_accounts))), required=False)
+        self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_strategies)), sorted(list(all_strategies))), required=False)
         self.fields['startdate'] = forms.DateField(initial=(now - datetime.timedelta(weeks=4)))
         self.fields['enddate'] = forms.DateField(initial=now)
