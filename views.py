@@ -130,6 +130,23 @@ def trades_index(request):
     now = datetime.datetime.utcnow()
     new_trade_form = NewTradeForm(initial={'timestamp' : now})
     trades = Trade.objects.all().order_by('-timestamp')
+    form_filter = ClosedTradeFilterForm(request.GET)
+    if form_filter.is_valid():
+        d = form_filter.cleaned_data
+        if len(d['strategies']) > 0:
+            trades = trades.filter(strategyId__in=list(d['strategies']))
+        if len(d['accounts']) > 0:
+            trades = trades.filter(account__in=list(d['accounts']))
+
+        if d['startdate'] is not None:
+            trades = trades.filter(timestamp__gte=d['startdate'])
+        if d['enddate'] is not None:
+            trades = trades.filter(timestamp__lte=d['enddate'])
+
+    else:
+        now = datetime.date.today()
+        form_filter = ClosedTradeFilterForm()
+
     paginator = Paginator(trades, 25)
     try:
         page_num = int(request.GET.get('page'))
@@ -142,9 +159,11 @@ def trades_index(request):
     except EmptyPage:
         trades = paginator.page(1)
 
+
     template = loader.get_template('dashboard/trades.html')
     context = {
             'trades' : trades,
+            'closed_trades_filter_form' : form_filter,
             'new_trade_form' : new_trade_form,
             'user' : request.user,
             'page_num' : page_num,
