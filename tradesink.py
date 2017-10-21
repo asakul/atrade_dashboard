@@ -22,9 +22,14 @@ def store_trade(j):
         comment = j['order-comment']
     except KeyError:
         comment = ""
+
+    try:
+        commission = float(j['commission'])
+    except KeyError:
+        commission = ""
     ts = parse_timestamp(j['execution-time'])
     trade = Trade(account=j['account'], security=j['security'], price=float(j['price']), quantity=quantity, volume=float(j['volume']), volumeCurrency=j['volume-currency'], strategyId=j['strategy'],
-                signalId=j['signal-id'], comment=comment, timestamp=ts)
+                signalId=j['signal-id'], comment=comment, timestamp=ts, commission=commission)
     trade.save()
 
 

@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
@@ -226,6 +227,7 @@ def aggregate_unbalanced_trades():
                     profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
             balance_entry['ks'] = trade.volume / (trade.price * abs(trade.quantity))
             balance_entry['trade_ids'] = [trade.pk]
+            balance_entry['commissions'] = trade.commission
         else:
             print('update entry: ', balance_key)
             balance_entry['balance'] += trade.quantity
@@ -233,10 +235,12 @@ def aggregate_unbalanced_trades():
             balance_entry['ks'] += trade.volume / (trade.price * abs(trade.quantity))
             balance_entry['ks'] /= 2
             balance_entry['trade_ids'].append(trade.pk)
+            balance_entry['commissions'] += trade.commission
 
             print('updated: ', balance_entry['balance'])
             if balance_entry['balance'] == 0:
                 balance_entry['trade'].profit *= balance_entry['ks']
+                balance_entry['trade'].profit -= balance_entry['commissions']
                 balance_entry['trade'].exitTime = trade.timestamp
                 balanced_trades.append((balance_entry['trade'], balance_entry['trade_ids']))
         balances[balance_key] = balance_entry
@@ -323,6 +327,9 @@ def performance(request):
             all_accounts.add(trade.account)
 
     closed_trades = ClosedTrade.objects.exclude(account='demo').order_by('exitTime')
+    trades = Trade.objects.exclude(account='demo').order_by('timestamp')
+    trades = Trade.objects.exclude(account='demo').order_by('timestamp')
+
     dates = []
     columns = {}
     for account in all_accounts:
@@ -383,6 +390,7 @@ def performance(request):
                 results[trade.account]['loss'] -= trade.profit
 
     results['total']['pf'] = results['total']['profit'] / results['total']['loss']
+    results['total']['commission'] = trades.aggregate(Sum('commission'))['commission__sum']
 
     template = loader.get_template('dashboard/performance.html')
     context = {

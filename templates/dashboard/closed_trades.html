@@ -2,6 +2,7 @@
 {% load static %}
 {% load bootstrap3 %}
 {% load mathfilters %}
+{% load humanize %}
 
 {% block content %}
 <script src="http://code.highcharts.com/highcharts.js"></script>
@@ -37,7 +38,7 @@
         <td>{{ closed_trade.security }}</td>
         <td>{{ closed_trade.entryTime }}</td>
         <td>{{ closed_trade.exitTime }}</td>
-        <td>{{ closed_trade.profit }} {{ closed_trade.profitCurrency}}</td>
+        <td>{{ closed_trade.profit|floatformat:2 }} {{ closed_trade.profitCurrency}}</td>
         <td>{{ closed_trade.strategyId }}</td>
     </tr>
 {% endfor %}

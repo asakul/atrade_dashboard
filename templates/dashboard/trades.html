@@ -2,6 +2,7 @@
 {% load static %}
 {% load bootstrap3 %}
 {% load mathfilters %}
+{% load humanize %}
 
 {% block content %}
 <div class="panel-header">
@@ -32,6 +33,7 @@
         <td>Price</td>
         <td>Quantity</td>
         <td>Volume</td>
+        <td>Commission</td>
         <td>Strategy ID</td>
         <td>Signal ID</td>
         <td> <a href="#new_trade_form" role="button" data-toggle="collapse">New trade...</a> </td>
@@ -42,9 +44,10 @@
         <td>{{ trade.account }}</td>
         <td>{{ trade.security }}</td>
         <td>{% if trade.quantity > 0 %} Buy {% else %} Sell {% endif %}</td>
-        <td>{{ trade.price }}</td>
+        <td>{{ trade.price|floatformat:4}}</td>
         <td>{{ trade.quantity|abs }}</td>
         <td>{{ trade.volume|stringformat:".3f"}} {{ trade.volumeCurrency }}</td>
+        <td>{{ trade.commission|floatformat:3 }}</td>
         <td>{{ trade.strategyId }}</td>
         <td>{{ trade.signalId }}</td>
         <td><button type="button" class="btn btn-danger" onclick="if(window.confirm('Confirm deletion')) { document.location.href = '{% url 'delete_trade' trade_id=trade.pk %}'}; return false;">Delete</button></td>

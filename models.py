@@ -14,6 +14,7 @@ class Trade(models.Model):
     signalId = models.CharField(max_length=64)
     comment = models.CharField(max_length=256)
     timestamp = models.DateTimeField()
+    commission = models.DecimalField(max_digits=20, decimal_places=10, default=0)
     balanced = models.BooleanField(default=False)
 
 class ClosedTrade(models.Model):
