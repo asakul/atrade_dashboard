@@ -26,7 +26,7 @@ def store_trade(j):
     try:
         commission = float(j['commission'])
     except KeyError:
-        commission = ""
+        commission = 0
     ts = parse_timestamp(j['execution-time'])
     trade = Trade(account=j['account'], security=j['security'], price=float(j['price']), quantity=quantity, volume=float(j['volume']), volumeCurrency=j['volume-currency'], strategyId=j['strategy'],
                 signalId=j['signal-id'], comment=comment, timestamp=ts, commission=commission)
