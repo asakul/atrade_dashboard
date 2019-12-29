@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load bootstrap3 %}
+{% load mathfilters %}
+{% load humanize %}
+
+{% block content %}
+<table class="table table-condensed">
+    <tr>
+        <td>Time</td>
+        <td>Account</td>
+        <td>Security</td>
+        <td>Operation</td>
+        <td>Price</td>
+        <td>Quantity</td>
+        <td>Volume</td>
+        <td>Commission</td>
+        <td>Strategy ID</td>
+        <td>Signal ID</td>
+        <td></td>
+    </tr>
+{% for trade in trades %}
+    <tr>
+        <td>{{ trade.timestamp }}</td>
+        <td>{{ trade.account }}</td>
+        <td>{{ trade.security }}</td>
+        <td>{% if trade.quantity > 0 %} Buy {% else %} Sell {% endif %}</td>
+        <td>{{ trade.price|floatformat:4}}</td>
+        <td>{{ trade.quantity|abs }}</td>
+        <td>{{ trade.volume|stringformat:".3f"}} {{ trade.volumeCurrency }}</td>
+        <td>{{ trade.commission|floatformat:3 }}</td>
+        <td>{{ trade.strategyId }}</td>
+        <td>{{ trade.signalId }}</td>
+        <td><button type="button" class="btn btn-danger" onclick="if(window.confirm('Confirm deletion')) { document.location.href = '{% url 'delete_trade' trade_id=trade.pk %}'}; return false;">Delete</button></td>
+    </tr>
+{% endfor %}
+</table>
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        {% for p in page_range %}
+        <li{% if p == page_num %} class="active"{% endif %}><a href="{% url 'trades_index'%}?page={{p}}">{{ p }}</a></li>
+        {% endfor %}
+    </ul>
+</nav>
+{% endblock %}

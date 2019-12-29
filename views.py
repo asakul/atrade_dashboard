@@ -144,6 +144,9 @@ def trades_index(request):
         if d['enddate'] is not None:
             trades = trades.filter(timestamp__lte=d['enddate'])
 
+        if d['unbalanced_only'] is not None:
+            trades = trades.filter(balanced=False)
+
     else:
         now = datetime.date.today()
         form_filter = ClosedTradeFilterForm()
@@ -215,35 +218,39 @@ def aggregate_unbalanced_trades():
             balance_entry = { 'balance' : 0}
 
         print('ts:', trade.timestamp)
-        if balance_entry['balance'] == 0:
-            print('new entry: ', balance_key)
-            balance_entry['balance'] = trade.quantity
-            direction = ''
-            if trade.quantity > 0:
-                direction='long'
-            else:
-                direction='short'
-            balance_entry['trade'] = ClosedTrade(account=trade.account, security=trade.security, entryTime=trade.timestamp, profitCurrency=trade.volumeCurrency,
-                    profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
-            balance_entry['ks'] = trade.volume / (trade.price * abs(trade.quantity))
-            balance_entry['trade_ids'] = [trade.pk]
-            balance_entry['commissions'] = trade.commission
-        else:
-            print('update entry: ', balance_key)
-            balance_entry['balance'] += trade.quantity
-            balance_entry['trade'].profit += -trade.price * trade.quantity
-            balance_entry['ks'] += trade.volume / (trade.price * abs(trade.quantity))
-            balance_entry['ks'] /= 2
-            balance_entry['trade_ids'].append(trade.pk)
-            balance_entry['commissions'] += trade.commission
-
-            print('updated: ', balance_entry['balance'])
+        trade_volume = (trade.price * abs(trade.quantity))
+        if trade_volume != 0:
             if balance_entry['balance'] == 0:
-                balance_entry['trade'].profit *= balance_entry['ks']
-                balance_entry['trade'].profit -= balance_entry['commissions']
-                balance_entry['trade'].exitTime = trade.timestamp
-                balanced_trades.append((balance_entry['trade'], balance_entry['trade_ids']))
-        balances[balance_key] = balance_entry
+                print('new entry: ', balance_key)
+                balance_entry['balance'] = trade.quantity
+                direction = ''
+                if trade.quantity > 0:
+                    direction='long'
+                else:
+                    direction='short'
+                balance_entry['trade'] = ClosedTrade(account=trade.account, security=trade.security, entryTime=trade.timestamp, profitCurrency=trade.volumeCurrency,
+                        profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
+                balance_entry['ks'] = trade.volume / trade_volume
+                balance_entry['trade_ids'] = [trade.pk]
+                balance_entry['commissions'] = trade.commission
+            else:
+                print('update entry: ', balance_key)
+                balance_entry['balance'] += trade.quantity
+                balance_entry['trade'].profit += -trade.price * trade.quantity
+                balance_entry['ks'] += trade.volume / trade_volume
+                balance_entry['ks'] /= 2
+                balance_entry['trade_ids'].append(trade.pk)
+                balance_entry['commissions'] += trade.commission
+
+                print('updated: ', balance_entry['balance'])
+                if balance_entry['balance'] == 0:
+                    balance_entry['trade'].profit *= balance_entry['ks']
+                    balance_entry['trade'].profit -= balance_entry['commissions']
+                    balance_entry['trade'].exitTime = trade.timestamp
+                    balanced_trades.append((balance_entry['trade'], balance_entry['trade_ids']))
+            balances[balance_key] = balance_entry
+        else:
+            print('Trade zero volume: ', trade.security, trade.strategyId, trade.price, trade.quantity)
 
     for trade, trade_ids in balanced_trades:
         trade.save()
