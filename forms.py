@@ -37,4 +37,4 @@ class ClosedTradeFilterForm(forms.Form):
         self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_strategies)), sorted(list(all_strategies))), required=False)
         self.fields['startdate'] = forms.DateField(initial=(now - datetime.timedelta(weeks=4)))
         self.fields['enddate'] = forms.DateField(initial=now)
-        self.fields['unbalanced_only'] = forms.BooleanField()
+        self.fields['unbalanced_only'] = forms.BooleanField(required=False)
