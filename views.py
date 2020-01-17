@@ -11,11 +11,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .models import RobotInstance, Trade, ClosedTrade
-from .forms import NewTradeForm, TradeFilterForm, LoginForm
+from .forms import NewTradeForm, TradeFilterForm, PerformanceFilterForm, LoginForm
 import redis
 import json
 import datetime
 import calendar
+
+import numpy as np
+import scipy.stats as stats
 
 def login_view(request):
     if request.method == 'POST':
@@ -328,22 +331,45 @@ def rebalance_closed_trades(request):
 @login_required
 def performance(request):
     aggregate_unbalanced_trades()
-    all_accounts = set()
-    for trade in ClosedTrade.objects.all():
-        if trade.account != 'demo':
-            all_accounts.add(trade.account)
 
-    closed_trades = ClosedTrade.objects.exclude(account='demo').order_by('exitTime')
     trades = Trade.objects.exclude(account='demo').order_by('timestamp')
-    trades = Trade.objects.exclude(account='demo').order_by('timestamp')
+
+    form = PerformanceFilterForm(request.GET)
+    if form.is_valid():
+        d = form.cleaned_data
+        closed_trades = ClosedTrade.objects.all()
+        trades = Trade.objects.order_by('timestamp')
+        if len(d['strategies']) > 0:
+            closed_trades = closed_trades.filter(strategyId__in=list(d['strategies']))
+            trades = trades.filter(strategyId__in=list(d['strategies']))
+        if len(d['accounts']) > 0:
+            closed_trades = closed_trades.filter(account__in=list(d['accounts']))
+            trades = trades.filter(account__in=list(d['accounts']))
+            all_accounts = set(d['accounts'])
+
+        if d['startdate'] is not None:
+            closed_trades = closed_trades.filter(exitTime__gte=d['startdate'])
+            trades = trades.filter(timestamp__gte=d['startdate'])
+        if d['enddate'] is not None:
+            closed_trades = closed_trades.filter(exitTime__lte=d['enddate'])
+            trades = trades.filter(timestamp__lte=d['enddate'])
+        timeframe = d['timeframe']
+
+    else:
+        now = datetime.date.today()
+        closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4)))
+        trades = Trade.objects.order_by('timestamp').filter(timestamp__gte=(now - datetime.timedelta(weeks=4)))
+        form = PerformanceFilterForm()
+        timeframe = 'daily'
+
+        all_accounts = set()
+        for trade in ClosedTrade.objects.all():
+            all_accounts.add(trade.account)
 
     dates = []
     columns = {}
     for account in all_accounts:
         columns[account] = []
-    timeframe = request.GET.get('timeframe')
-    if timeframe is None:
-        timeframe = 'daily'
     if timeframe == 'daily':
         prev_day = None
         for trade in closed_trades:
@@ -396,8 +422,29 @@ def performance(request):
                 results['total']['loss'] -= trade.profit
                 results[trade.account]['loss'] -= trade.profit
 
-    results['total']['pf'] = results['total']['profit'] / results['total']['loss']
+    if results['total']['loss'] > 0:
+        results['total']['pf'] = results['total']['profit'] / results['total']['loss']
+    else:
+        results['total']['pf'] = '+inf' 
     results['total']['commission'] = trades.aggregate(Sum('commission'))['commission__sum']
+
+    results['stats'] = {}
+    results['stats_period'] = {}
+
+    pnls = list(map(lambda x: float(x.profit), closed_trades))
+    results['stats']['mean'] = "{:.3f}".format(np.mean(pnls))
+    results['stats']['stddev'] = "{:.3f}".format(np.std(pnls))
+    results['stats']['skew'] = "{:.3f}".format(stats.skew(pnls))
+    results['stats']['kurtosis'] = "{:.3f}".format(stats.kurtosis(pnls))
+
+    all_columns = []
+    for v in columns.values():
+        all_columns += list(map(float, v))
+
+    results['stats_period']['mean'] = "{:.3f}".format(np.mean(all_columns))
+    results['stats_period']['stddev'] = "{:.3f}".format(np.std(all_columns))
+    results['stats_period']['skew'] = "{:.3f}".format(stats.skew(all_columns))
+    results['stats_period']['kurtosis'] = "{:.3f}".format(stats.kurtosis(all_columns))
 
     template = loader.get_template('dashboard/performance.html')
     context = {
@@ -405,6 +452,6 @@ def performance(request):
         'dates' : dates,
         'columns' : columns,
         'results' : results,
-        'timeframe' : timeframe
+        'trades_filter_form' : form
     }
     return HttpResponse(template.render(context, request))

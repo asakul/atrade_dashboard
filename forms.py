@@ -30,7 +30,7 @@ class TradeFilterForm(forms.Form):
     def __init__(self, *args, show_unbalanced_checkbox=False, **kwargs):
         super().__init__(*args, **kwargs)
 
-        now = datetime.date.today()
+        now = datetime.date.today() + datetime.timedelta(days=1)
         
         all_accounts, all_strategies = get_all_accounts_and_strategies()
         self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_accounts)), sorted(list(all_accounts))), required=False)
@@ -42,3 +42,24 @@ class TradeFilterForm(forms.Form):
                 self.fields['unbalanced_only'] = forms.BooleanField(required=False)
         except KeyError:
             pass
+
+# Can't subclass it from TradeFilterForm, field 'timestamp' will not show. Go figure.
+class PerformanceFilterForm(forms.Form):
+    def __init__(self, *args, show_unbalanced_checkbox=False, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        now = datetime.date.today() + datetime.timedelta(days=1)
+        
+        all_accounts, all_strategies = get_all_accounts_and_strategies()
+        self.fields['accounts'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_accounts)), sorted(list(all_accounts))), required=False)
+        self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_strategies)), sorted(list(all_strategies))), required=False)
+        self.fields['startdate'] = forms.DateField(initial=(now - datetime.timedelta(weeks=4)))
+        self.fields['enddate'] = forms.DateField(initial=now)
+        try:
+            if show_unbalanced_checkbox:
+                self.fields['unbalanced_only'] = forms.BooleanField(required=False)
+        except KeyError:
+            pass
+
+        self.fields['timeframe'] = forms.ChoiceField(choices=[('daily', 'Daily'), ('weekly', 'Weekly'), ('monthly', 'Monthly')])
+    

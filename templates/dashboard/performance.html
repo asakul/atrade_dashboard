@@ -5,11 +5,27 @@
 {% load humanize %}
 
 {% block content %}
+
+<div class="panel panel-default">
+	<div class="panel-header">
+		<a href="#trades_filter_form" role="button" data-toggle="collapse">Apply filter...</a>
+	</div>
+    <div class="panel-body panel-collapse collapse" id="trades_filter_form">
+		<form action="{% url 'performance' %}" method="GET">
+		{% csrf_token %}
+		{% bootstrap_form trades_filter_form %}
+		{% bootstrap_button button_type='submit' content='Submit' %}
+		</form>
+	</div>
+</div>
+
+<!--
 <ul class="nav nav-pills">
     <li role="presentation"{% if timeframe|length == 0 or timeframe == 'daily' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=daily">Daily</a></li>
     <li role="presentation"{% if timeframe == 'weekly' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=weekly">Weekly</a></li>
     <li role="presentation"{% if timeframe == 'monthly' %} class="active"{% endif %}><a href="{% url 'performance' %}?timeframe=monthly">Monthly</a></li>
 </ul>
+-->
 <script src="http://code.highcharts.com/highcharts.js"></script>
 <div id="profits-container" style="width:100%; height:400px;">
 </div>
@@ -34,6 +50,34 @@
   <tr>
     <td>Total commission: </td>
     <td> {{ results.total.commission|floatformat:2 }}</td>
+  </tr>
+</table>
+
+<table class="table">
+  <tr>
+    <td>Parameter</td>
+    <td>Trade</td>
+    <td>Period</td>
+  </tr>
+  <tr>
+	<td>Mean</td>
+	<td> {{ results.stats.mean }} </td>
+	<td> {{ results.stats_period.mean }} </td>
+  </tr>
+  <tr>
+	<td>Std. dev.</td>
+	<td> {{ results.stats.stddev }} </td>
+	<td> {{ results.stats_period.stddev }} </td>
+  </tr>
+  <tr>
+	<td>Skew</td>
+	<td> {{ results.stats.skew }} </td>
+	<td> {{ results.stats_period.skew }} </td>
+  </tr>
+  <tr>
+	<td>Kurtosis</td>
+	<td> {{ results.stats.kurtosis }} </td>
+	<td> {{ results.stats_period.kurtosis }} </td>
   </tr>
 </table>
 
