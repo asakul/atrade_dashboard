@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .models import RobotInstance, Trade, ClosedTrade
-from .forms import NewTradeForm, ClosedTradeFilterForm, LoginForm
+from .forms import NewTradeForm, TradeFilterForm, LoginForm
 import redis
 import json
 import datetime
@@ -131,7 +131,7 @@ def trades_index(request):
     now = datetime.datetime.utcnow()
     new_trade_form = NewTradeForm(initial={'timestamp' : now})
     trades = Trade.objects.all().order_by('-timestamp')
-    form_filter = ClosedTradeFilterForm(request.GET)
+    form_filter = TradeFilterForm(request.GET, show_unbalanced_checkbox=True)
     if form_filter.is_valid():
         d = form_filter.cleaned_data
         if len(d['strategies']) > 0:
@@ -149,7 +149,7 @@ def trades_index(request):
 
     else:
         now = datetime.date.today()
-        form_filter = ClosedTradeFilterForm()
+        form_filter = TradeFilterForm(show_unbalanced_checkbox=True)
 
     paginator = Paginator(trades, 25)
     try:
@@ -229,7 +229,7 @@ def aggregate_unbalanced_trades():
                 else:
                     direction='short'
                 balance_entry['trade'] = ClosedTrade(account=trade.account, security=trade.security, entryTime=trade.timestamp, profitCurrency=trade.volumeCurrency,
-                        profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
+                                                     profit=(-trade.price * trade.quantity), strategyId=trade.strategyId, direction=direction)
                 balance_entry['ks'] = trade.volume / trade_volume
                 balance_entry['trade_ids'] = [trade.pk]
                 balance_entry['commissions'] = trade.commission
@@ -282,7 +282,7 @@ def make_cumulative_profits(closed_trades):
 @login_required
 def closed_trades_index(request):
     aggregate_unbalanced_trades()
-    form = ClosedTradeFilterForm(request.GET)
+    form = TradeFilterForm(request.GET)
     if form.is_valid():
         d = form.cleaned_data
         closed_trades = ClosedTrade.objects.all()
@@ -299,7 +299,7 @@ def closed_trades_index(request):
     else:
         now = datetime.date.today()
         closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4)))
-        form = ClosedTradeFilterForm()
+        form = TradeFilterForm()
 
     closed_trades = closed_trades.order_by('-exitTime')
 

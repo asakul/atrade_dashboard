@@ -26,8 +26,8 @@ class NewTradeForm(forms.Form):
     strategyId = forms.CharField(max_length=64)
     signalId = forms.CharField(max_length=64)
 
-class ClosedTradeFilterForm(forms.Form):
-    def __init__(self, *args, **kwargs):
+class TradeFilterForm(forms.Form):
+    def __init__(self, *args, show_unbalanced_checkbox=False, **kwargs):
         super().__init__(*args, **kwargs)
 
         now = datetime.date.today()
@@ -37,4 +37,8 @@ class ClosedTradeFilterForm(forms.Form):
         self.fields['strategies'] = forms.MultipleChoiceField(choices=zip(sorted(list(all_strategies)), sorted(list(all_strategies))), required=False)
         self.fields['startdate'] = forms.DateField(initial=(now - datetime.timedelta(weeks=4)))
         self.fields['enddate'] = forms.DateField(initial=now)
-        self.fields['unbalanced_only'] = forms.BooleanField(required=False)
+        try:
+            if show_unbalanced_checkbox:
+                self.fields['unbalanced_only'] = forms.BooleanField(required=False)
+        except KeyError:
+            pass
