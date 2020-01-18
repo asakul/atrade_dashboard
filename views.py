@@ -334,6 +334,7 @@ def performance(request):
 
     trades = Trade.objects.exclude(account='demo').order_by('timestamp')
 
+    all_accounts = set()
     form = PerformanceFilterForm(request.GET)
     if form.is_valid():
         d = form.cleaned_data
@@ -363,6 +364,8 @@ def performance(request):
         timeframe = 'daily'
 
         all_accounts = set()
+
+    if len(all_accounts) == 0:
         for trade in ClosedTrade.objects.all():
             all_accounts.add(trade.account)
 
