@@ -147,7 +147,7 @@ def trades_index(request):
         if d['enddate'] is not None:
             trades = trades.filter(timestamp__lte=d['enddate'])
 
-        if d['unbalanced_only'] is not None:
+        if d['unbalanced_only'] is not None and d['unbalanced_only']:
             trades = trades.filter(balanced=False)
 
     else:
