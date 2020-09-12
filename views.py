@@ -338,7 +338,7 @@ def performance(request):
     form = PerformanceFilterForm(request.GET)
     if form.is_valid():
         d = form.cleaned_data
-        closed_trades = ClosedTrade.objects.all()
+        closed_trades = ClosedTrade.objects.all().order_by('exitTime')
         trades = Trade.objects.order_by('timestamp')
         if len(d['strategies']) > 0:
             closed_trades = closed_trades.filter(strategyId__in=list(d['strategies']))
@@ -358,7 +358,7 @@ def performance(request):
 
     else:
         now = datetime.date.today()
-        closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4)))
+        closed_trades = ClosedTrade.objects.all().filter(exitTime__gte=(now - datetime.timedelta(weeks=4))).order_by('exitTime')
         trades = Trade.objects.order_by('timestamp').filter(timestamp__gte=(now - datetime.timedelta(weeks=4)))
         form = PerformanceFilterForm()
         timeframe = 'daily'
